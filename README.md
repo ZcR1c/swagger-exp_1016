@@ -39,7 +39,7 @@
 ## 工具截图
 选择是否扫描API集合：<br>
 <img width="611" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/f4a8ad4d-430c-42a1-b660-a81fc5c343e2">
-<img width="567" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/e48ab2d4-fd21-4900-9294-5571f6b0802e">
+<img width="567" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/e48ab2d4-fd21-4900-9294-5571f6b0802e"><br>
 最终都打开swagger-ui:<br>
 <img width="990" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/35c1bc7c-ea3c-4155-910f-fd9865232217">
 
