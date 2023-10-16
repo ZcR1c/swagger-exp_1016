@@ -30,16 +30,15 @@
 
   > python swagger-exp.py http://site.com/v2/api-docs
 
-* 打开Swagger UI，并且扫描接口
+* 打开Swagger UI，并且扫描接口[可选择是否进行扫描API]
 
   > python swagger-exp.py<br>
+  > 是否进行扫描API集合(默认扫描)y/n (默认为 'y'): y<br>
   > 请输入请求APIURL：https://xx.xx.xx.xx/api
 
 ## 工具截图
+<img width="611" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/f4a8ad4d-430c-42a1-b660-a81fc5c343e2">
+<img width="567" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/e48ab2d4-fd21-4900-9294-5571f6b0802e">
+<img width="990" alt="image" src="https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/35c1bc7c-ea3c-4155-910f-fd9865232217">
 
-![](screenshot.png)
-
-![](screenshot2.png)
-
-![image](https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/3a36eb59-203b-47c0-9cdb-5bcdb5c6a886)
 
