@@ -32,8 +32,7 @@
 
 * 打开Swagger UI，并且扫描接口
 
-  > python swagger-exp.py
-  <br>
+  > python swagger-exp.py<br>
   > 请输入请求APIURL：https://xx.xx.xx.xx/api
 
 ## 工具截图
