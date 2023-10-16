@@ -1,4 +1,4 @@
-# **Swagger API Exploit 1.1**
+# **Swagger API Exploit 1.1-2023.10.16**
 
 这是一个 Swagger REST API 信息泄露利用工具。 主要功能有：
 
@@ -30,12 +30,16 @@
 
   > python swagger-exp.py http://site.com/v2/api-docs
 
-* 只打开Swagger UI，不扫描接口
+* 打开Swagger UI，并且扫描接口
 
   > python swagger-exp.py
+  > 请输入请求APIURL：https://xx.xx.xx.xx/api
 
 ## 工具截图
 
 ![](screenshot.png)
 
 ![](screenshot2.png)
+
+![image](https://github.com/ZcR1c/swagger-exp_1016/assets/37270009/3a36eb59-203b-47c0-9cdb-5bcdb5c6a886)
+
