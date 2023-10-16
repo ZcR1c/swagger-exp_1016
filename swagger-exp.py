@@ -265,8 +265,12 @@ if __name__ == '__main__':
         for url in api_set_list:
             process_doc(url)
     else:
-        url = input("请输入请求APIURL：")
-        process_api_doc(url)
+        api_scan = input("是否进行扫描API集合(默认扫描)y/n (默认为 'y'): ") or "y"
+        if api_scan.lower() == "y":
+            url = input("请输入请求APIURL:")
+            process_api_doc(url)
+        else:
+            pass
     
     # 开启浏览器，打开API文档
     server = ThreadingSimpleServer(('127.0.0.1', 0), RequestHandler)
