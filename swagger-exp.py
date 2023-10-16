@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Swagger REST API Exploit
-# By LiJieJie my[at]lijiejie.com
+# By LiJieJie my[at]lijiejie.com 
+# Modify ZcR1c 2023.10.16
 
 import sys
 import requests
@@ -12,6 +13,8 @@ import subprocess
 import threading
 import copy
 import os
+from urllib.parse import urlparse
+
 
 try:
     import urlparse
@@ -49,6 +52,12 @@ def find_all_api_set(start_url):
             print_msg('[OK] [API set] %s' % start_url)
             with codecs.open('api-docs.json', 'w', encoding='utf-8') as f:
                 f.write(text)
+        if text.strip().startswith('{"openapi":"'):    # from openapi 3.0
+            api_set_list.append(start_url)
+            print_msg('[OK] [API set] %s' % start_url)
+            with codecs.open('api-docs.json', 'w', encoding='utf-8') as f:
+                f.write(text)
+
         elif text.find('"swaggerVersion"') > 0:    # from /swagger-resources/
             base_url = start_url[:start_url.find('/swagger-resources')]
             json_doc = json.loads(text)
@@ -60,58 +69,85 @@ def find_all_api_set(start_url):
     except Exception as e:
         print_msg('[find_all_api_set] process error %s' % e)
 
+def process(json_doc,tq_host):
+    # 2.0
+    if 'swagger' in json_doc:
+        base_url = scheme + '://' + tq_host + json_doc['basePath']
+    # 3.0
+    if 'openapi' in json_doc:
+        url = json_doc['servers'][0]['url']
+        parsed_url = urlparse(url)
+        path = parsed_url.path
+        base_url =  scheme + '://' + tq_host + path
+        print_msg(base_url)
+    
+    base_url = base_url.rstrip('/')
+    for path in json_doc['paths']:
+
+        for method in json_doc['paths'][path]:
+            if method.upper() not in ['GET', 'POST', 'PUT']:
+                continue
+
+            params_str = ''
+            sensitive_words = ['url', 'path', 'uri']
+            sensitive_params = []
+            if 'parameters' in json_doc['paths'][path][method]:
+                parameters = json_doc['paths'][path][method]['parameters']
+
+                for parameter in parameters:
+                    para_name = parameter['name']
+                    # mark sensitive parma
+                    for word in sensitive_words:
+                        if para_name.lower().find(word) >= 0:
+                            sensitive_params.append(para_name)
+                            break
+
+                    if 'format' in parameter:
+                        para_format = parameter['format']
+                    elif 'schema' in parameter and 'format' in parameter['schema']:
+                        para_format = parameter['schema']['format']
+                    elif 'schema' in parameter and 'type' in parameter['schema']:
+                        para_format = parameter['schema']['type']
+                    elif 'schema' in parameter and '$ref' in parameter['schema']:
+                        para_format = parameter['schema']['$ref']
+                        para_format = para_format.replace('#/definitions/', '')
+                        para_format = '{OBJECT_%s}' % para_format
+                    else:
+                        para_format = parameter['type'] if 'type' in parameter else 'unkonwn'
+
+                    is_required = '' if parameter['required'] else '*'
+                    params_str += '&%s=%s%s%s' % (para_name, is_required, para_format, is_required)
+                params_str = params_str.strip('&')
+                if sensitive_params:
+                    print_msg('[*] Possible vulnerable param found: %s, path is %s' % (
+                        sensitive_params, base_url+path))
+
+            scan_api(method, base_url, path, params_str)
 
 def process_doc(url):
     try:
         json_doc = requests.get(url, headers=headers, verify=False).json()
-        base_url = scheme + '://' + json_doc['host'] + json_doc['basePath']
-        base_url = base_url.rstrip('/')
-        for path in json_doc['paths']:
+        tq_host = urlparse(url).netloc
+        # print(tq_host)
 
-            for method in json_doc['paths'][path]:
-                if method.upper() not in ['GET', 'POST', 'PUT']:
-                    continue
-
-                params_str = ''
-                sensitive_words = ['url', 'path', 'uri']
-                sensitive_params = []
-                if 'parameters' in json_doc['paths'][path][method]:
-                    parameters = json_doc['paths'][path][method]['parameters']
-
-                    for parameter in parameters:
-                        para_name = parameter['name']
-                        # mark sensitive parma
-                        for word in sensitive_words:
-                            if para_name.lower().find(word) >= 0:
-                                sensitive_params.append(para_name)
-                                break
-
-                        if 'format' in parameter:
-                            para_format = parameter['format']
-                        elif 'schema' in parameter and 'format' in parameter['schema']:
-                            para_format = parameter['schema']['format']
-                        elif 'schema' in parameter and 'type' in parameter['schema']:
-                            para_format = parameter['schema']['type']
-                        elif 'schema' in parameter and '$ref' in parameter['schema']:
-                            para_format = parameter['schema']['$ref']
-                            para_format = para_format.replace('#/definitions/', '')
-                            para_format = '{OBJECT_%s}' % para_format
-                        else:
-                            para_format = parameter['type'] if 'type' in parameter else 'unkonwn'
-
-                        is_required = '' if parameter['required'] else '*'
-                        params_str += '&%s=%s%s%s' % (para_name, is_required, para_format, is_required)
-                    params_str = params_str.strip('&')
-                    if sensitive_params:
-                        print_msg('[*] Possible vulnerable param found: %s, path is %s' % (
-                            sensitive_params, base_url+path))
-
-                scan_api(method, base_url, path, params_str)
+        process(json_doc,tq_host)
     except Exception as e:
         import traceback
         traceback.print_exc()
         print_msg('[process_doc error][%s] %s' % (url, e))
 
+# 从api-docs文件中读取并扫描
+def process_api_doc(url):
+    try:
+        json_doc = read_api_data(file_path)
+        tq_host = urlparse(url).netloc
+        # print(tq_host)
+
+        process(json_doc,tq_host)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print_msg('[process_api_doc error][%s] %s' % (url, e))
 
 def scan_api(method, base_url, path, params_str, error_code=None):
     # place holder
@@ -133,11 +169,15 @@ def scan_api(method, base_url, path, params_str, error_code=None):
 
     content_type = r.headers['content-type'] if 'content-type' in r.headers else ''
     content_length = r.headers['content-length'] if 'content-length' in r.headers else ''
+    # 获取响应内容的前500个字节
+    content_bytes = r.content[:500]
+    # 将字节转换为字符串
+    content_text = content_bytes.decode('utf-8')
     if not content_length:
         content_length = len(r.content)
     if not error_code:
-        print_msg('[Response] Code: %s Content-Type: %s Content-Length: %s' % (
-            r.status_code, content_type, content_length))
+        print_msg('[Response] Code: %s Content-Type: %s Content-Length: %s \nContent-Text: %s' % (
+            r.status_code, content_type, content_length, content_text))
     else:
         if r.status_code not in [401, 403] or r.status_code != error_code:
             global auth_bypass_detected
@@ -204,9 +244,16 @@ def chrome_open(chrome_path, url, server):
             out_file.flush()
             out_file.close()
 
+# 读取json文件内容
+file_path = 'api-docs.json'
+def read_api_data(file_path):
+    with open(file_path, 'r') as file:
+        json_doc = json.load(file)
+    return json_doc
 
 if __name__ == '__main__':
     out_file = codecs.open('api_summary.txt', 'w', encoding='utf-8')
+
     if len(sys.argv) > 1:
         try:
             _scheme = urlparse.urlparse(sys.argv[1]).scheme.lower()
@@ -217,7 +264,11 @@ if __name__ == '__main__':
         find_all_api_set(sys.argv[1])
         for url in api_set_list:
             process_doc(url)
-
+    else:
+        url = input("请输入请求APIURL：")
+        process_api_doc(url)
+    
+    # 开启浏览器，打开API文档
     server = ThreadingSimpleServer(('127.0.0.1', 0), RequestHandler)
     url = 'http://127.0.0.1:%s' % server.server_port
     print_msg('Swagger UI Server on: %s' % url)
